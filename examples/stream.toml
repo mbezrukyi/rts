@@ -1,0 +1,46 @@
+name = 'order-events'
+
+[[pipelines]]
+
+[pipelines.read]
+kind = 'kafka'
+options = { subscribe = 'orders' }
+
+[[pipelines.steps]]
+kind = 'parse'
+format = 'json'
+schema = '''
+    order_id string,
+    store_id string,
+    status string,
+    amount decimal(12, 2),
+    updated_at timestamp
+'''
+
+[[pipelines.steps]]
+kind = 'filter'
+conditions = ['order_id is not null']
+
+[[pipelines.steps]]
+kind = 'join'
+table = 'sales.stores'
+how = 'left'
+on = ['left.store_id = right.store_id']
+columns = { store_name = 'right.name' }
+
+[[pipelines.steps]]
+kind = 'select'
+
+[pipelines.steps.columns]
+order_id = 'order_id'
+store_name = 'store_name'
+status = 'status'
+amount = 'amount'
+updated_at = 'updated_at'
+received_at = 'timestamp'
+
+[pipelines.write]
+kind = 'delta_stream'
+table = 'sales.order_events'
+output_mode = 'append'
+checkpoint = 'order_events'

@@ -1,0 +1,36 @@
+name = 'orders'
+
+[[pipelines]]
+
+[pipelines.read]
+kind = 'delta_batch'
+table = 'sales.order_events'
+
+[[pipelines.steps]]
+kind = 'deduplicate'
+keys = ['order_id', 'status']
+latest_by = ['updated_at', 'received_at']
+
+[[pipelines.steps]]
+kind = 'aggregate'
+keys = ['order_id']
+
+[pipelines.steps.columns]
+store_name = 'first(store_name, true)'
+amount = 'max(amount)'
+ordered_at = 'min(updated_at)'
+
+[[pipelines.steps]]
+kind = 'derive'
+columns = { ordered_on = 'to_date(ordered_at)' }
+
+[pipelines.write]
+kind = 'delta_merge'
+table = 'sales.orders'
+on = ['old.order_id = new.order_id']
+filters = { ordered_at = '>' }
+
+[pipelines.write.columns]
+amount = 'new.amount'
+ordered_at = 'new.ordered_at'
+ordered_on = 'new.ordered_on'

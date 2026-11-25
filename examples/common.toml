@@ -1,0 +1,7 @@
+checkpoint = '/Volumes/main/sales/checkpoints'
+
+[spark]
+'spark.sql.shuffle.partitions' = 8
+
+[kafka]
+'kafka.bootstrap.servers' = 'broker:9092'
